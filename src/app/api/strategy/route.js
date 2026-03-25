@@ -17,14 +17,14 @@ export async function POST(req) {
     const body = await req.json();
     const { 
       name, symbol, optionType, strike, expiry, 
-      entryCondition, stopLoss, target, quantity,
+      entryCondition, indicators, stopLoss, target, quantity,
       trailingSL, startTime, endTime, orderType, maxTradePerDay
     } = body;
 
     await connectDB();
     const newStrategy = new Strategy({
       name, symbol, optionType, strike, expiry, 
-      entryCondition, 
+      entryCondition, indicators: indicators || [],
       stopLoss: stopLoss || null, 
       target: target || null, 
       quantity,

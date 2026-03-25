@@ -54,6 +54,8 @@ export default function DashboardPage() {
   useEffect(() => {
     async function loadDashboard() {
       try {
+        axios.get('/api/engine/start').catch(e => console.error('Engine start failed', e));
+
         const [stratRes, tradeRes] = await Promise.all([
           axios.get('/api/strategy'),
           axios.get('/api/trades')

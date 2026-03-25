@@ -36,6 +36,7 @@ export default function StrategiesPage() {
   useEffect(() => {
     let socket = null;
     async function init() {
+      axios.get('/api/engine/start').catch(e => console.error('Engine start failed', e));
       const data = await fetchStrategies();
       await fetchStocks();
       await fetchOpenTrades();
@@ -482,8 +483,13 @@ export default function StrategiesPage() {
                                            }}>
                                             <option>RSI</option>
                                             <option>EMA</option>
+                                            <option>SMA</option>
                                             <option>MACD</option>
                                             <option>SUPER TREND</option>
+                                            <option>BOLLINGER BANDS</option>
+                                            <option>VWAP</option>
+                                            <option>ADX</option>
+                                            <option>STOCHASTICS</option>
                                          </select>
                                       </div>
                                       <div className="space-y-2">
