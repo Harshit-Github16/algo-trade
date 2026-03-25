@@ -1,17 +1,27 @@
 {
   "name": "algo-trade",
   "version": "0.1.0",
-  "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "next dev",
+    "dev": "node --env-file=.env server.js",
     "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
+    "start": "NODE_ENV=production node --env-file=.env server.js",
+    "lint": "eslint",
+    "init-db": "node --env-file=.env src/lib/init-db.js"
   },
   "dependencies": {
+    "axios": "^1.13.6",
+    "ioredis": "^5.10.1",
+    "lightweight-charts": "^5.1.0",
+    "lucide-react": "^1.0.1",
+    "mongoose": "^9.3.2",
     "next": "16.2.1",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "recharts": "^3.8.0",
+    "socket.io-client": "^4.8.3",
+    "uuid": "^13.0.0",
+    "ws": "^8.20.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
