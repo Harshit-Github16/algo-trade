@@ -1,7 +1,7 @@
 import { connectDB } from './db.js';
 import { Trade } from './models.js';
 import { getPrice } from './marketData.js';
-import { placeDhanOrder } from './brokerClient.js';
+import { closeTrade } from './tradeManager.js';
 import { logger } from './logger.js';
 
 let monitorInterval = null;
@@ -35,29 +35,28 @@ async function checkOpenTrades() {
         const { getDhanPositions } = await import('./brokerClient.js');
         const dhanPositions = await getDhanPositions();
         
-        // Map positions by symbol for easy lookup
         const activeSymbols = new Map();
         (dhanPositions || []).forEach(p => {
-          if (Math.abs(p.netQty) > 0) {
-            activeSymbols.set(p.tradingSymbol, p.netQty);
-          }
+          if (Math.abs(p.netQty) > 0) activeSymbols.set(p.tradingSymbol, p.netQty);
         });
 
-        for (const trade of openTrades) {
-          // If we have an open trade but Dhan says position is 0
+        // ONLY sync REAL trades. Skip dummy ones as broker won't have them.
+        const realTrades = openTrades.filter(t => !t.isDummy);
+
+        for (const trade of realTrades) {
           if (!activeSymbols.has(trade.symbol)) {
-             logger.info(`🔄 SYNC: Symbol ${trade.symbol} closed externally at broker. Marking CLOSED. `);
+             logger.info(`🔄 SYNC: Real trade ${trade.symbol} closed externally. Marking CLOSED. `);
              trade.status = 'CLOSED';
              trade.closedAt = new Date();
              trade.tags.push('EXTERNAL_CLOSE');
              await trade.save();
-             continue; // Skip further SL/TP check for this trade
           }
         }
       } catch (syncErr) {
         logger.warn('Position sync failed', { err: syncErr.message });
       }
     }
+
 
     // --- 2. Check SL/TP Auto-Exit ---
     for (const trade of openTrades) {
@@ -84,32 +83,9 @@ async function checkOpenTrades() {
       }
 
       if (exitReason) {
-        logger.info(`🔔 AUTO-EXIT: ${exitReason} for ${trade.symbol} | LTP: ₹${ltp} | Entry: ₹${entry}`);
-
-        // Place reverse order to close position
-        const exitSide = side === 'BUY' ? 'SELL' : 'BUY';
-        const result = await placeDhanOrder({
-          symbol: trade.symbol,
-          qty,
-          side: exitSide,
-          type: 'MARKET',
-          price: ltp
-        });
-
-        // Calculate PNL
-        const pnl = side === 'BUY'
-          ? (ltp - entry) * qty
-          : (entry - ltp) * qty;
-
-        // Update trade record
-        trade.exitPrice = ltp;
-        trade.pnl = parseFloat(pnl.toFixed(2));
-        trade.status = 'CLOSED';
-        trade.closedAt = new Date();
-        await trade.save();
-
-        logger.info(`✅ Trade Closed: ${trade.symbol} | Reason: ${exitReason} | PNL: ₹${pnl.toFixed(2)} | Broker: ${result.status}`);
+        await closeTrade(trade._id, ltp, exitReason);
       }
+
     }
   } catch (err) {
     logger.error('Trade Monitor Error:', { err: err.message });

@@ -48,47 +48,35 @@ export async function POST(req) {
     // Decide direction: if strategy says 'up' → BUY, else SELL
     const side = strategy.entryCondition?.direction === 'down' ? 'SELL' : 'BUY';
 
-    logger.info(`🔴 FORCE ORDER: ${side} ${strategy.quantity} x ${strategy.symbol} @ ₹${currentPrice}`);
+    logger.info(`✨ PAPER FORCE ORDER: ${side} ${strategy.quantity} x ${strategy.symbol} @ ₹${currentPrice}`);
 
-    // Place real order via Dhan
-    const result = await placeDhanOrder({
+    // --- CREATE PAPER TRADE RECORD ---
+    const newTrade = await Trade.create({
+      strategyId: strategy._id,
+      strategy_name: strategy.name,
       symbol: strategy.symbol,
-      qty: strategy.quantity,
       side,
-      type: 'MARKET',
-      price: currentPrice
+      strike: 'N/A',
+      optionType: 'EQ',
+      entryPrice: parseFloat(currentPrice),
+      qty: parseInt(strategy.quantity),
+      pnl: 0,
+      target: strategy.target ? parseFloat(strategy.target) : null,
+      stopLoss: strategy.stopLoss ? parseFloat(strategy.stopLoss) : null,
+      brokerOrderId: `PAPER_${Date.now()}`,
+      status: 'OPEN',
+      isDummy: true, // Mark as paper trade
+      createdAt: new Date()
     });
 
-    if (result.status === 'SUCCESS') {
-      // Log trade to DB
-      await Trade.create({
-        strategyId: strategy._id,
-        strategy_name: strategy.name,
-        symbol: strategy.symbol,
-        side,
-        strike: 'N/A',
-        optionType: 'EQ',
-        entryPrice: parseFloat(currentPrice),
-        qty: parseInt(strategy.quantity),
-        pnl: 0,
-        target: strategy.target ? parseFloat(strategy.target) : null,
-        stopLoss: strategy.stopLoss ? parseFloat(strategy.stopLoss) : null,
-        brokerOrderId: result.orderId || '',
-        status: 'OPEN',
-        createdAt: new Date()
-      });
-
-      return NextResponse.json({
-        success: true,
-        message: `Order placed for ${strategy.symbol}`,
-        orderId: result.orderId,
-        side,
-        price: currentPrice,
-        qty: strategy.quantity
-      });
-    } else {
-      return NextResponse.json({ error: result.reason || 'Broker rejected order' }, { status: 502 });
-    }
+    return NextResponse.json({
+      success: true,
+      message: `Paper order recorded for ${strategy.symbol}`,
+      orderId: newTrade.brokerOrderId,
+      side,
+      price: currentPrice,
+      qty: strategy.quantity
+    });
 
   } catch (err) {
     logger.error('Force Execute Error', { err: err.message });

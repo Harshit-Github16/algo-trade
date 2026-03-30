@@ -6,6 +6,7 @@ import { executeTrade } from './executionEngine.js';
 import { logger } from './logger.js';
 import { evaluateIndicator } from './indicators.js';
 import { getPriceHistory } from './priceHistory.js';
+import { closeTrade } from './tradeManager.js';
 
 let engineInterval = null;
 
@@ -36,13 +37,29 @@ async function evaluateStrategies() {
         ? JSON.parse(strategy.entryCondition) 
         : strategy.entryCondition;
 
+      // --- CHECK FOR OPEN TRADE EXIT ---
+      const openTrade = await Trade.findOne({ strategyId: strategy._id, status: 'OPEN' });
+      
+      let indicatorSignal = null;
+      if (strategy.indicators?.length > 0) {
+        indicatorSignal = await evaluateAllIndicators(strategy);
+      }
+
+      if (openTrade) {
+        // Indicator based Auto-Exit: Close if opposite signal or explicit exit indicator
+        if (indicatorSignal && indicatorSignal !== openTrade.side) {
+           logger.info(`🚨 INDICATOR EXIT: ${indicatorSignal} for ${strategy.symbol} (Side: ${openTrade.side})`);
+           await closeTrade(openTrade._id, currentPrice, 'INDICATOR_EXIT');
+        }
+        continue; // Already in trade, skip entry logic
+      }
+
+      // --- CHECK FOR ENTRY SIGNAL ---
       let signal = null;
 
       // ─── 1. Price Cross Logic ───
       if (condition && condition.level && (condition.type === 'price_cross' || condition.type === 'breakout' || condition.type === 'price_and_indicator')) {
         const level = parseFloat(condition.level);
-        logger.info(`📊 [Price] ${strategy.symbol}: Live ₹${currentPrice} vs Target ₹${level} (${condition.direction})`);
-
         if (condition.direction === 'up' && currentPrice >= level) {
           signal = 'BUY';
         } else if (condition.direction === 'down' && currentPrice <= level) {
@@ -51,35 +68,21 @@ async function evaluateStrategies() {
 
         // If type is price_and_indicator, price must match AND indicator must confirm
         if (condition.type === 'price_and_indicator' && signal) {
-          const indicatorSignal = await evaluateAllIndicators(strategy);
           if (!indicatorSignal) {
             logger.info(`📊 [Indicator] Price matched but indicator not confirmed for ${strategy.symbol}`);
-            signal = null; // Cancel — indicator didn't confirm
+            signal = null; // Cancel
           }
         }
       }
 
       // ─── 2. Pure Indicator Logic ───
       if (!signal && condition?.type === 'indicator') {
-        signal = await evaluateAllIndicators(strategy);
+        signal = indicatorSignal;
       }
 
-      // ─── 3. Execute if signal found ───
+      // ─── 3. Execute entry if signal found ───
       if (signal) {
-        logger.info(`🚨 SIGNAL MATCHED: ${signal} for ${strategy.symbol} at ₹${currentPrice}`, {
-          strategyId: strategy._id,
-          indicators: strategy.indicators?.map(i => i.indicator).join(', ') || 'price_only'
-        });
-
-        // Prevent duplicate trades
-        const openTradesCount = await Trade.countDocuments({
-          strategyId: strategy._id,
-          status: 'OPEN'
-        });
-        if (openTradesCount > 0) {
-          logger.info(`⏸️ Skipping — already in open trade for ${strategy.symbol}`);
-          continue;
-        }
+        logger.info(`🚨 SIGNAL MATCHED: ${signal} for ${strategy.symbol} at ₹${currentPrice}`);
 
         const tradeData = { strategy, signal, currentPrice };
         const isValid = await validateTrade(tradeData);
@@ -94,6 +97,7 @@ async function evaluateStrategies() {
     logger.error('Strategy engine error:', { err: err.message });
   }
 }
+
 
 /**
  * Evaluate all indicator conditions for a strategy

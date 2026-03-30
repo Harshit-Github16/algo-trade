@@ -47,6 +47,7 @@ const tradeSchema = new mongoose.Schema({
   brokerOrderId: { type: String, default: '' },
   brokerExitOrderId: { type: String, default: '' },
   status: { type: String, default: 'OPEN' }, // 'OPEN', 'CLOSED', 'CANCELLED'
+  isDummy: { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now },
   closedAt: { type: Date },
   tags: { type: [String], default: [] }
