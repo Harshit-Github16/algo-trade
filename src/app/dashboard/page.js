@@ -143,15 +143,6 @@ export default function DashboardPage() {
         <div className="xl:col-span-3 space-y-6">
           <MarketWatch />
 
-          <div className="bg-[#0A1128] p-6 rounded-3xl overflow-hidden relative group">
-            <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none group-hover:scale-125 transition-transform duration-700">
-              <Terminal size={120} />
-            </div>
-            <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-4">Command Center</p>
-            <h4 className="text-white font-black text-lg tracking-tight mb-2">Automated Scalping</h4>
-            <p className="text-slate-400 text-xs leading-relaxed mb-6">Execution hub is monitoring 12 ticker feeds with &lt;10ms latency.</p>
-            <button className="w-full py-3 bg-indigo-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-[#0A1128] transition-all shadow-lg active:scale-95">Deploy New Node</button>
-          </div>
         </div>
 
         {/* Center: Execution Log */}
@@ -319,7 +310,7 @@ function MarketWatch() {
           <span className="text-[8px] font-black uppercase tracking-widest">LIVE</span>
         </div>
       </div>
-      
+
       <div className="divide-y divide-slate-50 max-h-[460px] overflow-y-auto custom-scrollbar">
         {stocks.length > 0 ? stocks.map(stock => (
           <div key={stock.symbol} className="px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition-all group">
@@ -337,8 +328,8 @@ function MarketWatch() {
         )) : (
           <div className="px-8 py-20 text-center opacity-40">
             <div className="flex flex-col items-center gap-3">
-               <Activity size={32} className="text-slate-300" />
-               <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">Awaiting Data Stream...</p>
+              <Activity size={32} className="text-slate-300" />
+              <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">Awaiting Data Stream...</p>
             </div>
           </div>
         )}
@@ -346,8 +337,8 @@ function MarketWatch() {
 
       <div className="p-4 bg-slate-50/50 border-t border-slate-50 mt-auto">
         <div className="flex items-center justify-center gap-2">
-           <Zap size={10} className="text-indigo-400" />
-           <span className="text-[8px] font-black text-slate-400 tracking-[0.2em] uppercase leading-none mt-0.5">NiftyTrader Enterprise Stream Active</span>
+          <Zap size={10} className="text-indigo-400" />
+          <span className="text-[8px] font-black text-slate-400 tracking-[0.2em] uppercase leading-none mt-0.5">NiftyTrader Enterprise Stream Active</span>
         </div>
       </div>
     </div>

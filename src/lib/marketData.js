@@ -95,8 +95,9 @@ export async function connectMarketData() {
   async function pollAndSync() {
     try {
       const state = global._marketState;
-      const strategies = await Strategy.find({ status: 'ACTIVE' });
-      const symbols = [...new Set(strategies.map(s => s.symbol))];
+      // Fetch symbols for ALL strategies (active or stopped) so we can show charts
+      const strategies = await Strategy.find({});
+      const symbols = [...new Set(strategies.map(s => s.symbol.toUpperCase()))];
       if (symbols.length === 0) symbols.push('NIFTY'); // Heartbeat default
 
       const changed = JSON.stringify([...symbols].sort()) !== JSON.stringify([...state.currentSymbols].sort());

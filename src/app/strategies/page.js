@@ -5,8 +5,9 @@ import axios from 'axios';
 import {
   Play, Square, Plus, Trash2,
   Settings2, Target, ShieldAlert, Clock,
-  Zap, Info, ChevronRight, X, ArrowUpRight, ArrowDownRight, Activity, ShieldCheck, TrendingUp
+  Zap, Info, ChevronRight, X, ArrowUpRight, ArrowDownRight, Activity, ShieldCheck, TrendingUp, BarChart3
 } from 'lucide-react';
+import Link from 'next/link';
 
 export default function StrategiesPage() {
   const [strategies, setStrategies] = useState([]);
@@ -362,6 +363,13 @@ export default function StrategiesPage() {
                       {orderingId === strategy._id ? 'Routing...' : 'Execute Now'}
                     </button>
                   )}
+                  <Link
+                    href={`/stocks/${strategy.symbol.toLowerCase()}?strategyId=${strategy._id}`}
+                    className="p-2.5 text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 border border-transparent hover:border-indigo-100 rounded-xl transition-all group/chart"
+                    title="Real-time Node Chart"
+                  >
+                    <BarChart3 size={18} className="group-hover/chart:scale-110 transition-transform" />
+                  </Link>
                   <button className="p-2.5 text-slate-300 hover:text-[#0A1128] hover:bg-slate-50 border border-transparent hover:border-slate-100 rounded-xl transition-all">
                     <Settings2 size={18} />
                   </button>

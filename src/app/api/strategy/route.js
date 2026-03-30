@@ -2,9 +2,19 @@ import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db.js';
 import { Strategy } from '@/lib/models.js';
 
-export async function GET() {
+export async function GET(req) {
   try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+
     await connectDB();
+
+    if (id) {
+      const strategy = await Strategy.findById(id).lean();
+      if (!strategy) return NextResponse.json({ error: 'Strategy not found' }, { status: 404 });
+      return NextResponse.json({ strategy });
+    }
+
     const strategies = await Strategy.find().sort({ createdAt: -1 }).lean();
     return NextResponse.json({ strategies });
   } catch (err) {
@@ -15,18 +25,18 @@ export async function GET() {
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { 
-      name, symbol, optionType, strike, expiry, 
+    const {
+      name, symbol, optionType, strike, expiry,
       entryCondition, indicators, stopLoss, target, quantity,
       trailingSL, startTime, endTime, orderType, maxTradePerDay
     } = body;
 
     await connectDB();
     const newStrategy = new Strategy({
-      name, symbol, optionType, strike, expiry, 
+      name, symbol, optionType, strike, expiry,
       entryCondition, indicators: indicators || [],
-      stopLoss: stopLoss || null, 
-      target: target || null, 
+      stopLoss: stopLoss || null,
+      target: target || null,
       quantity,
       trailingSL, startTime, endTime, orderType, maxTradePerDay
     });
